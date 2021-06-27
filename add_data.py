@@ -98,12 +98,8 @@ def preprocess_df(df: pd.DataFrame) -> pd.DataFrame:
     -------
 
     """
-    cols_2_drop = ['Unnamed: 0', 'timestamp', 'sentiment', 'possibly_sensitive', 'original_text']
-    try:
-        df = df.drop(columns=cols_2_drop, axis=1)
-        df = df.fillna(0)
-    except KeyError as e:
-        print("Error:", e)
+    df = df.drop(columns=['possibly_sensitive','polarity'], axis=1)
+    df = df.fillna(0)
 
     return df
 
@@ -141,11 +137,11 @@ def insert_to_tweet_table(dbName: str, df: pd.DataFrame, table_name: str) -> Non
     df = preprocess_df(df)
 
     for _, row in df.iterrows():
-        sqlQuery = f"""INSERT INTO {table_name} (created_at, source, original_text, polarity, subjectivity, language,
+        sqlQuery = f"""INSERT INTO {table_name} (created_at, source, original_text, subjectivity, language,
                     favorite_count, retweet_count, original_author, screen_count, followers_count, friends_count,
                     hashtags, user_mentions, place)
-             VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"""
-        data = (row[0], row[1], row[2], row[3], (row[4]), (row[5]), row[6], row[7], row[8], row[9], row[10], row[11],
+             VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"""
+        data = (row[0], row[1], row[2], (row[4]), (row[5]), row[6], row[7], row[8], row[9], row[10], row[11],
                 row[12], row[13], row[14])
 
         try:
