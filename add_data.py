@@ -98,7 +98,8 @@ def preprocess_df(df: pd.DataFrame) -> pd.DataFrame:
     -------
 
     """
-    df = df[['original_text', 'polarity']]
+    df = df.drop(columns='possibly_sensitive', axis=1)
+    
     return df
 
 
