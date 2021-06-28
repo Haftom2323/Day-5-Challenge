@@ -6,53 +6,80 @@ from wordcloud import WordCloud
 import plotly.express as px
 from add_data import db_execute_fetch
 
-st.set_page_config(page_title="Analyzing Twitter Data", layout="wide")
+st.set_page_config('Twitter Data Analysis', layout="wide")
+st.title('Twitter Data Analysis')
 
 def loadData():
-    query = "select * from twitterinfo"
-    df = db_execute_fetch(query, dbName="tweets_data", rdf=True)
-    return df
+    query = "select * from Tweetsinfo"
+    df = db_execute_fetch(query, dbName="Twitter", rdf=True)
+    return df 
 
-def selectHashTag():
+def text_category(p):
+    if p > 0 : return 'positive'
+    elif p == 0: return 'neutral'
+    return 'negative'
+
+
+def display_df_polarity(p):
     df = loadData()
-    hashTags = st.multiselect("choose combaniation of hashtags", list(df['hashtags'].unique()))
-    if hashTags:
-        df = df[np.isin(df, hashTags).any(axis=1)]
+    df['score'] = df['polarity'].apply(text_category)
+    if p == 'positive':
+        st.write(df[df['score'] == 'positive'])
+    elif p == 'negative':
+        st.write(df[df['score'] == 'negative'])
+    elif p == 'neutral':
+        st.write(df[df['score'] == 'neutral'])
+    else:
         st.write(df)
+   
+def polarity_count():
+    df = loadData()
+    df['score'] = df['polarity'].apply(text_category) 
+    score = list(df['score'])
+    return { 'positive': score.count('positive'), 'neutral': score.count('neutral'),
+                            'negative': score.count('negative')  } 
 
-def barChart(data, title, X, Y):
-    title = title.title()
-    st.title(f'{title} Chart')
-    msgChart = (alt.Chart(data).mark_bar().encode(alt.X(f"{X}:N", sort=alt.EncodingSortField(field=f"{Y}", op="values",
-                order='ascending')), y=f"{Y}:Q"))
-    st.altair_chart(msgChart, use_container_width=True)
+
+def barChart():
+    st.title('Bar Chart visualization')
+    count = polarity_count()
+    data = pd.DataFrame({
+    'Sentiment': list(count.keys()),
+    'Tweets': [count[key] for key in count.keys()],
+                })
+    bar_fig = px.bar(data, x='Sentiment', y='Tweets')
+    st.plotly_chart(bar_fig)
+
+
+def pieChart():
+    st.title('Pie Chart visualization')
+    count = polarity_count()
+    pie_fig = px.pie(values=[count[key] for key in count.keys()], names=list(count.keys()))
+    st.plotly_chart(pie_fig)
+
 
 def wordCloud():
     df = loadData()
-    originalText = ''
-    for text in df['original_text']:
-        tokens = str(text).lower().split()
+    df['original_text'] = df['original_text'].map(lambda x: x.lower())
+    long_string = ','.join(list(df['original_text'].values))
 
-        originalText += " ".join(tokens) + " "
+    wordcloud = WordCloud(background_color="yellow", width=650, height=450, \
+                             min_font_size=5, contour_color='steelblue')
+    
+    wordcloud.generate(long_string)
+    st.title("Word cloud visualization")
+    st.image(wordcloud.to_array())
 
-    wc = WordCloud(width=650, height=450, background_color='white', min_font_size=5).generate(originalText)
-    st.title("Tweet Text Word Cloud")
-    st.image(wc.to_array())
-
-def stBarChart():
-    df = loadData()
-    dfCount = pd.DataFrame({'Tweet_count': df.groupby(['original_author'])['original_text'].count()}).reset_index()
-    dfCount["original_author"] = dfCount["original_author"].astype(str)
-    dfCount = dfCount.sort_values("Tweet_count", ascending=False)
-
-    num = st.slider("Select number of Rankings", 0, 50, 5)
-    title = f"Top {num} Ranking By Number of tweets"
-    barChart(dfCount.head(num), title, "original_author", "Tweet_count")
+polarity = st.sidebar.selectbox('choose polarity of tweets', ('All', 'positive', 'negative', 'neutral'))
+display_df_polarity(polarity)
 
 
-st.title("Analyzing Twitter Data")
-selectHashTag()
-st.markdown("<p style='padding:10px; background-color:#000000;color:#00ECB9;font-size:16px;border-radius:10px;'>Section Break</p>", unsafe_allow_html=True)
 st.title("Data Visualizations")
-wordCloud()
-
+visualization = st.sidebar.selectbox('Choose visualization type', 
+                ('Word cloud','Bar Chart','Pie Chart'))
+if visualization == 'Word cloud':
+    wordCloud()
+elif visualization == 'Bar Chart':
+    barChart()
+elif visualization == 'Pie Chart':
+    pieChart()

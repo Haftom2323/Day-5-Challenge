@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `twitterinfo` 
+CREATE TABLE IF NOT EXISTS `Tweetsinfo` 
 (
     `id` INT NOT NULL AUTO_INCREMENT,
     `created_at` TEXT NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `twitterinfo`
     `hashtags` TEXT DEFAULT NULL,
     `user_mentions` TEXT DEFAULT NULL,
     `place` TEXT DEFAULT NULL,
-    
     PRIMARY KEY (`id`)
 )
 ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;
+      
